@@ -6,21 +6,14 @@
     - extract temperature data from Gangles AWS (4009 m a.s.l.)
     - Apply lapse correction for AWS temperature and compare
 ![W5E5_Validation](figs/W5E5_Validation.png)
-- [peak_water.ipynb](docs/peak_water.ipynb): 
-    - process different climate data (WFDE5_CRU, ERA5_daily, W5E5, W5E5_MSWEP(prcp from MSWEP, temp. from W5E5)),
-    - new mass-balance model `TIModel_Parent` with children `TIModel` and `TIModel_Sfc_Type`
 
-## How to install!
+- [Leh_peak_water.ipynb](docs/Leh_peak_water.ipynb): 
+    - Methodology documentation at [OGGM Hydrological mass-balance output](https://oggm.org/tutorials/stable/notebooks/hydrological_output.html)
+![Leh_peak_water](figs/Leh_peak_water.png)
 
-## code inside of MBsandbox
-
-- [mbmod_daily_oneflowline.py](MBsandbox/mbmod_daily_oneflowline.py): 
-    - process different climate data (WFDE5_CRU, ERA5_daily, W5E5, W5E5_MSWEP(prcp from MSWEP, temp. from W5E5)),
-    - new mass-balance model `TIModel_Parent` with children `TIModel` and `TIModel_Sfc_Type`
-- [flowline_TIModel.py](MBsandbox/flowline_TIModel.py): copies of run_from_climate, run_random_climate that are compatible with `TIModel`, not yet tested for `TIModel_Sfc_Type`
-- [help_func.py](MBsandbox/help_func.py): helper functions to minimize the bias, optimise standard deviation quotient for reference glaciers, to calibrate the melt factor given the precipitation factor and geodetic observations, and to compute performance statistics
-- [tests](MBsandbox/tests): tests for different functions
-- [wip](MBsandbox/wip): work in process folder without documentation
+- [Leh_runoff.ipynb](docs/Leh_runoff.ipynb): 
+    - Methodology documentation at [OGGM Hydrological mass-balance output](https://oggm.org/tutorials/stable/notebooks/hydrological_output.html)
+![Leh_runoff](figs/Leh_runoff.png)
 
 ## How to install!
 <!-- structure as in https://github.com/fmaussion/scispack and oggm/oggm -->
