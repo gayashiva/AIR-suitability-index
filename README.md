@@ -5,14 +5,17 @@
     - extract temperature data for Leh Glacier (4572 m a.s.l.) from W5E5 and ERA5 (monthly varying lapse rates),
     - extract temperature data from Gangles AWS (4009 m a.s.l.)
     - Apply lapse correction for AWS temperature and compare
+
 ![W5E5_Validation](figs/W5E5_Validation.png)
 
 - [Leh_peak_water.ipynb](docs/Leh_peak_water.ipynb): 
     - Methodology documentation at [OGGM Hydrological mass-balance output](https://oggm.org/tutorials/stable/notebooks/hydrological_output.html)
+
 ![Leh_peak_water](figs/Leh_peak_water.png)
 
 - [Leh_runoff.ipynb](docs/Leh_runoff.ipynb): 
     - Methodology documentation at [OGGM Hydrological mass-balance output](https://oggm.org/tutorials/stable/notebooks/hydrological_output.html)
+
 ![Leh_runoff](figs/Leh_runoff.png)
 
 ## How to install!
