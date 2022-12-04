@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import os
 
 path='/media/share/datasets/w5e5/'
-input_path=''
+input_path='/home/bsurya/work/oggm/AIR-suitability-index/input/'
+# input_path='/home/bsurya/work/oggm/AIR-suitability-index/MBsandbox/'
 
 ds_inv = xr.open_dataset(path + 'orog_W5E5v2.0.nc')
 #ds_inv = xr.open_dataset('/home/users/lschuster/glacierMIP/ASurf_WFDE5_CRU_v1.1.nc')
@@ -49,18 +50,22 @@ mask[mdf['lat_id'], mdf['lon_id']] = 1#mdf['Area']
 ds_inv['glacier_mask'] = (('latitude', 'longitude'), np.isfinite(mask))
 
 ###
+# W5E5 vars required:
+vars = ['hurs', 'rsds', 'tasmax', 'tasmin', 'tas', 'pr']
 
-make_daily = True
+make_daily = False
 if make_daily:
     
-    try:
-        os.mkdir(input_path + 'flattened/tmp_pr')
-    except:
-        pass
+    for var in vars:
+        try:
+            # os.umask(0)
+            os.mkdirs(input_path + 'flattened/tmp_{}'.format(var), 0o777)
+        except:
+            pass
     
     yss = [1979, 1981, 1991, 2001, 2011]
     yee = [1980, 1990, 2000, 2010, 2019]
-    for var in ['pr']:
+    for var in vars:
         for ys, ye in zip(yss, yee):
             ds = xr.open_dataset(path + '{}_W5E5v2.0_{}0101-{}1231.nc'.format(var, ys, ye))
 
@@ -121,25 +126,32 @@ if make_daily:
 
 # rename precipitation to 'pr'
 # make yearly files
-for var in ['pr', 'tas']:
+for var in vars:
+# for var in ['hurs', 'rsds', 'tasmax', 'tasmin']:
     for y in np.arange(1979, 2020):
+        print('flattened/tmp_{}/tmp_{}-*.nc'.format(var, str(y)))
         dso_y = xr.open_mfdataset(input_path + 'flattened/tmp_{}/tmp_{}-*.nc'.format(var, str(y)),
                                   concat_dim='time', combine='nested') # .rename_vars({'time_':'time'})
         dso_y.to_netcdf(input_path + 'flattened/tmp_{}/tmp2_{}.nc'.format(var, str(y)))
         dso_y.close()
     
 # aggregate yearly files
-for var in ['pr', 'tas']:
+# for var in ['pr', 'tas']:
+for var in vars:
+# for var in ['hurs', 'rsds', 'tasmax', 'tasmin']:
     dso_all2 = xr.open_mfdataset(input_path + 'flattened/tmp_{}/tmp2_*.nc'.format(var),
-                        concat_dim='time', combine='nested', parallel = True).rename_vars({'time_':'time'})
+                        concat_dim='time', combine='nested', parallel = True) #.rename_vars({'time_':'time'})
     
     dso_all2.attrs['history'] = 'longitudes to 0 -> 360,  only glacier gridpoints chosen and flattened latitude/longitude --> points'
     dso_all2.attrs['postprocessing_date'] = str(np.datetime64('today','D'))
-    dso_all2.attrs['postprocessing_scientist'] = 'lilian.schuster@student.uibk.ac.at'
+    # dso_all2.attrs['postprocessing_scientist'] = 'lilian.schuster@student.uibk.ac.at'
+    dso_all2.attrs['postprocessing_scientist'] = 'gayashiva91@gmail.com'
     dso_all2.to_netcdf(input_path + 'flattened/w5e5v2.0_{}_global_daily_flat_glaciers_1979_2019.nc'.format(var))
         
 # make monthly files 
-for var in ['pr', 'tas']:
+# for var in ['pr', 'tas']:
+for var in vars:
+# for var in ['hurs', 'rsds', 'tasmax', 'tasmin']:
 
     pathi= 'flattened/w5e5v2.0_{}_global_daily_flat_glaciers_1979_2019.nc'.format(var)
     ds = xr.open_dataset(input_path + pathi)
@@ -147,7 +159,8 @@ for var in ['pr', 'tas']:
 
     ds_monthly = ds.resample(time='MS', keep_attrs=True).mean(keep_attrs=True)
 
-    ds_monthly.attrs['postprocessing_scientist'] = 'lilian.schuster@student.uibk.ac.at'
+    # ds_monthly.attrs['postprocessing_scientist'] = 'lilian.schuster@student.uibk.ac.at'
+    ds_monthly.attrs['postprocessing_scientist'] = 'gayashiva91@gmail.com'
     ds_monthly.attrs['postprocessing_actions'] =  ("using xarray: ds_monthly = ds.resample(time='MS', keep_attrs=True).mean(keep_attrs=True)\n"
                                                                       "ds_monthly.to_netcdf()\n")
 
@@ -162,7 +175,8 @@ for var in ['pr', 'tas']:
         ds_tas_daily_std.tas_std.attrs['standard_name'] = 'air_temperature_daily_std'
         ds_tas_daily_std.tas_std.attrs['long_name'] = 'Near-Surface Air Temperature daily standard deviation'
         ds_tas_daily_std.attrs['postprocessing_date'] = str(np.datetime64('today','D'))
-        ds_tas_daily_std.attrs['postprocessing_scientist'] = 'lilian.schuster@student.uibk.ac.at'
+        # ds_tas_daily_std.attrs['postprocessing_scientist'] = 'lilian.schuster@student.uibk.ac.at'
+        ds_tas_daily_std.attrs['postprocessing_scientist'] = 'gayashiva91@gmail.com'
         ds_tas_daily_std.attrs['postprocessing_actions'] =  ("using xarray: \n"
                                                                       "ds_tas_daily_std = ds.resample(time='MS', keep_attrs=True).std(keep_attrs=True)\n"
                                                                        "ds_tas_daily_std = ds_tas_daily_std.rename_vars(dict(tas='tas_std'))\n"
@@ -176,7 +190,9 @@ for var in ['pr', 'tas']:
         
 #import os
 import glob
-for var in ['pr', 'tas']:
+for var in vars:
+# for var in ['pr']:
+# for var in ['hurs', 'rsds', 'tasmax', 'tasmin']:
     files = glob.glob(input_path + 'flattened/tmp_{}/tmp*'.format(var))
     for f in files:
         os.remove(f)

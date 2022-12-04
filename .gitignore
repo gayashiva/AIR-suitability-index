@@ -45,3 +45,4 @@ docs/.doctrees
 oggm/version.py
 oggm/ignore
 MBsandbox/flattened/
+input/
