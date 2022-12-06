@@ -40,6 +40,7 @@ import MBsandbox
 # Module logger
 log = logging.getLogger(__name__)
 ECMWF_SERVER = 'https://cluster.klima.uni-bremen.de/~oggm/climate/'
+LOCAL_SERVER = '/home/bsurya/work/oggm/AIR-suitability-index/input/'
 
 # only glacier-relevant gridpoints included!
 BASENAMES['ERA5_daily'] = {
@@ -54,9 +55,13 @@ BASENAMES['WFDE5_CRU_daily'] = {
     }
 
 BASENAMES['W5E5_daily'] = {
-    'inv': 'w5e5v2.0/flattened/daily/w5e5v2.0_glacier_invariant_flat.nc',
-    'tmp': 'w5e5v2.0/flattened/daily/w5e5v2.0_tas_global_daily_flat_glaciers_1979_2019.nc',
-    'prcp': 'w5e5v2.0/flattened/daily/w5e5v2.0_pr_global_daily_flat_glaciers_1979_2019.nc',
+    'inv': 'w5e5v2.0/flattened/w5e5v2.0_glacier_invariant_flat.nc',
+    'tmp': 'w5e5v2.0/flattened/w5e5v2.0_tas_global_daily_flat_glaciers_1979_2019.nc',
+    'prcp': 'w5e5v2.0/flattened/w5e5v2.0_pr_global_daily_flat_glaciers_1979_2019.nc',
+    'tmpmax': 'w5e5v2.0/flattened/w5e5v2.0_tasmax_global_daily_flat_glaciers_1979_2019.nc',
+    'tmpmin': 'w5e5v2.0/flattened/w5e5v2.0_tasmin_global_daily_flat_glaciers_1979_2019.nc',
+    'hurs': 'w5e5v2.0/flattened/w5e5v2.0_hurs_global_daily_flat_glaciers_1979_2019.nc',
+    'rsds': 'w5e5v2.0/flattened/w5e5v2.0_rsds_global_daily_flat_glaciers_1979_2019.nc',
     }
 
 BASENAMES['MSWEP_daily'] = {
@@ -106,7 +111,7 @@ def get_w5e5_file(dataset='W5E5_daily', var=None,
     return utils.file_downloader(server + BASENAMES[dataset][var])
 
 
-def write_climate_file(gdir, time, prcp, temp,
+def write_climate_file(gdir, time, prcp, temp, tempmax, tempmin, hurs, rsds,
                        ref_pix_hgt, ref_pix_lon, ref_pix_lat,
                        ref_pix_lon_pr=None, ref_pix_lat_pr=None,
                        gradient=None, temp_std=None,
@@ -128,6 +133,14 @@ def write_climate_file(gdir, time, prcp, temp,
         the precipitation array (unit: 'kg m-2')
     temp : ndarray
         the temperature array (unit: 'degC')
+    tempmax : ndarray
+        the max daily temperature array (unit: 'degC')
+    tempmin : ndarray
+        the min daily temperature array (unit: 'degC')
+    hurs : ndarray
+        the relative humidity array (unit: 'degC')
+    rsds : ndarray
+        the Surface Downwelling Shortwave Radiation array (unit: 'degC')
     ref_pix_hgt : float
         the elevation of the dataset's reference altitude
         (for correction). In practice it is the same altitude as the
@@ -323,6 +336,54 @@ def write_climate_file(gdir, time, prcp, temp,
         # no filling values!
         assert np.all(v[:].data < 1e5)
 
+        v = nc.createVariable('tempmax', 'f4', ('time',), zlib=zlib)
+        v.units = 'degC'
+        if ((source == 'ERA5_daily' or source == 'WFDE5_daily_cru' or source =='W5E5_daily') and
+            len(temp) > (y1 - y0) * 28 * 12 and temporal_resol == 'daily'):
+            v.long_name = '2m daily max temperature at height ref_hgt'
+        else:
+            v.long_name = '2m monthly max temperature at height ref_hgt'
+
+        v[:] = tempmax
+        # no filling values!
+        assert np.all(v[:].data < 1e5)
+
+        v = nc.createVariable('tempmin', 'f4', ('time',), zlib=zlib)
+        v.units = 'degC'
+        if ((source == 'ERA5_daily' or source == 'WFDE5_daily_cru' or source =='W5E5_daily') and
+            len(temp) > (y1 - y0) * 28 * 12 and temporal_resol == 'daily'):
+            v.long_name = '2m daily min temperature at height ref_hgt'
+        else:
+            v.long_name = '2m monthly min temperature at height ref_hgt'
+
+        v[:] = tempmin
+        # no filling values!
+        assert np.all(v[:].data < 1e5)
+
+        v = nc.createVariable('hurs', 'f4', ('time',), zlib=zlib)
+        v.units = '%'
+        if ((source == 'ERA5_daily' or source == 'WFDE5_daily_cru' or source =='W5E5_daily') and
+            len(temp) > (y1 - y0) * 28 * 12 and temporal_resol == 'daily'):
+            v.long_name = 'Near Surface Relative Humidity'
+        else:
+            v.long_name = 'Near Surface Relative Humidity'
+
+        v[:] = hurs
+        # no filling values!
+        assert np.all(v[:].data < 1e5)
+
+        v = nc.createVariable('rsds', 'f4', ('time',), zlib=zlib)
+        v.units = 'Wm-2'
+        if ((source == 'ERA5_daily' or source == 'WFDE5_daily_cru' or source =='W5E5_daily') and
+            len(temp) > (y1 - y0) * 28 * 12 and temporal_resol == 'daily'):
+            v.long_name = 'Surface Downwelling Shortwave Radiation'
+        else:
+            v.long_name = 'Surface Downwelling Shortwave Radiation'
+
+        v[:] = rsds
+        # no filling values!
+        assert np.all(v[:].data < 1e5)
+
         if gradient is not None:
             v = nc.createVariable('gradient', 'f4', ('time',), zlib=zlib)
             v.units = 'degC m-1'
@@ -448,9 +509,13 @@ def process_w5e5_data(gdir, y0=None, y1=None, temporal_resol='daily',
 
     else:
         if climate_type != 'W5E5_dw':
-            path_tmp = get_w5e5_file(dataset, 'tmp')
-            path_prcp = get_w5e5_file(dataset_prcp, 'prcp')
-            path_inv = get_w5e5_file(dataset, 'inv')
+            path_tmp = LOCAL_SERVER + BASENAMES['W5E5_daily']['tmp'] #get_w5e5_file(dataset, 'tmp', server= LOCAL_SERVER)
+            path_tmpmax =LOCAL_SERVER + BASENAMES['W5E5_daily']['tmpmax'] #get_w5e5_file(dataset_prcp, 'prcp', server=LOCAL_SERVER)
+            path_tmpmin =LOCAL_SERVER + BASENAMES['W5E5_daily']['tmpmin'] #get_w5e5_file(dataset_prcp, 'prcp', server=LOCAL_SERVER)
+            path_hurs =LOCAL_SERVER + BASENAMES['W5E5_daily']['hurs'] #get_w5e5_file(dataset_prcp, 'prcp', server=LOCAL_SERVER)
+            path_rsds =LOCAL_SERVER + BASENAMES['W5E5_daily']['rsds'] #get_w5e5_file(dataset_prcp, 'prcp', server=LOCAL_SERVER)
+            path_prcp =LOCAL_SERVER + BASENAMES['W5E5_daily']['prcp'] #get_w5e5_file(dataset_prcp, 'prcp', server=LOCAL_SERVER)
+            path_inv = LOCAL_SERVER + BASENAMES['W5E5_daily']['inv'] #get_w5e5_file(dataset, 'inv')
         elif climate_type == 'W5E5_dw':
             path_tmp = get_w5e5_file(dataset, 'tmp', server='https://cluster.klima.uni-bremen.de/~shanus/')
             path_prcp = get_w5e5_file(dataset_prcp, 'prcp', server='https://cluster.klima.uni-bremen.de/~shanus/')
@@ -507,6 +572,10 @@ def process_w5e5_data(gdir, y0=None, y1=None, temporal_resol='daily',
         Pvar = 'tp'
         if climate_type[:4] == 'W5E5':
             Tvar = 'tas'
+            Tmaxvar = 'tasmax'
+            Tminvar = 'tasmin'
+            RHvar = 'hurs'
+            SWvar = 'rsds'
             Pvar = 'pr'
         if temporal_resol == 'monthly':
             Tair_std = ds.resample(time='MS').std()[Tvar]
@@ -596,6 +665,120 @@ def process_w5e5_data(gdir, y0=None, y1=None, temporal_resol='daily',
 
         ref_lon_pr = ref_lon_pr - 360 if ref_lon_pr > 180 else ref_lon_pr
 
+    # temp max: similar as precipitation
+    with xr.open_dataset(path_tmpmax) as ds:
+        assert ds.longitude.min() >= 0
+
+        yrs = ds['time.year'].data
+        y0 = yrs[0] if y0 is None else y0
+        y1 = yrs[-1] if y1 is None else y1
+        # Attention here we take the same y0 and y1 as given from the
+        # daily tmp dataset (goes till end of 2018, or end of 2019)
+
+        ds = ds.sel(time=slice('{}-{:02d}-01'.format(y0, sm),
+                               '{}-{:02d}-{}'.format(y1, em, end_day)))
+        try:
+            # ... prcp is also flattened
+            # in case of W5E5_MSWEP this will be another gridpoint than for temperature
+            # but normally it should work
+            c = (ds.longitude - lon)**2 + (ds.latitude - lat)**2
+            ds = ds.isel(points=c.argmin())
+        except ValueError:
+            # this should not occur
+            ds = ds.sel(longitude=lon, latitude=lat, method='nearest')
+
+        # temperature should be in degree Celsius for the glacier climate files
+        tempmax = ds[Tmaxvar].data - 273.15
+        ref_lon_pr = float(ds['longitude'])
+        ref_lat_pr = float(ds['latitude'])
+
+        ref_lon_pr = ref_lon_pr - 360 if ref_lon_pr > 180 else ref_lon_pr
+
+    # temp min: similar as precipitation
+    with xr.open_dataset(path_tmpmin) as ds:
+        assert ds.longitude.min() >= 0
+
+        yrs = ds['time.year'].data
+        y0 = yrs[0] if y0 is None else y0
+        y1 = yrs[-1] if y1 is None else y1
+        # Attention here we take the same y0 and y1 as given from the
+        # daily tmp dataset (goes till end of 2018, or end of 2019)
+
+        ds = ds.sel(time=slice('{}-{:02d}-01'.format(y0, sm),
+                               '{}-{:02d}-{}'.format(y1, em, end_day)))
+        try:
+            # ... prcp is also flattened
+            # in case of W5E5_MSWEP this will be another gridpoint than for temperature
+            # but normally it should work
+            c = (ds.longitude - lon)**2 + (ds.latitude - lat)**2
+            ds = ds.isel(points=c.argmin())
+        except ValueError:
+            # this should not occur
+            ds = ds.sel(longitude=lon, latitude=lat, method='nearest')
+
+        # temperature should be in degree Celsius for the glacier climate files
+        tempmin = ds[Tminvar].data - 273.15
+        ref_lon_pr = float(ds['longitude'])
+        ref_lat_pr = float(ds['latitude'])
+
+        ref_lon_pr = ref_lon_pr - 360 if ref_lon_pr > 180 else ref_lon_pr
+
+    # RH: similar as precipitation
+    with xr.open_dataset(path_hurs) as ds:
+        assert ds.longitude.min() >= 0
+
+        yrs = ds['time.year'].data
+        y0 = yrs[0] if y0 is None else y0
+        y1 = yrs[-1] if y1 is None else y1
+        # Attention here we take the same y0 and y1 as given from the
+        # daily tmp dataset (goes till end of 2018, or end of 2019)
+
+        ds = ds.sel(time=slice('{}-{:02d}-01'.format(y0, sm),
+                               '{}-{:02d}-{}'.format(y1, em, end_day)))
+        try:
+            # ... prcp is also flattened
+            # in case of W5E5_MSWEP this will be another gridpoint than for temperature
+            # but normally it should work
+            c = (ds.longitude - lon)**2 + (ds.latitude - lat)**2
+            ds = ds.isel(points=c.argmin())
+        except ValueError:
+            # this should not occur
+            ds = ds.sel(longitude=lon, latitude=lat, method='nearest')
+
+        hurs = ds[RHvar].data
+        ref_lon_pr = float(ds['longitude'])
+        ref_lat_pr = float(ds['latitude'])
+
+        ref_lon_pr = ref_lon_pr - 360 if ref_lon_pr > 180 else ref_lon_pr
+
+    # SW: similar as precipitation
+    with xr.open_dataset(path_rsds) as ds:
+        assert ds.longitude.min() >= 0
+
+        yrs = ds['time.year'].data
+        y0 = yrs[0] if y0 is None else y0
+        y1 = yrs[-1] if y1 is None else y1
+        # Attention here we take the same y0 and y1 as given from the
+        # daily tmp dataset (goes till end of 2018, or end of 2019)
+
+        ds = ds.sel(time=slice('{}-{:02d}-01'.format(y0, sm),
+                               '{}-{:02d}-{}'.format(y1, em, end_day)))
+        try:
+            # ... prcp is also flattened
+            # in case of W5E5_MSWEP this will be another gridpoint than for temperature
+            # but normally it should work
+            c = (ds.longitude - lon)**2 + (ds.latitude - lat)**2
+            ds = ds.isel(points=c.argmin())
+        except ValueError:
+            # this should not occur
+            ds = ds.sel(longitude=lon, latitude=lat, method='nearest')
+
+        rsds = ds[SWvar].data
+        ref_lon_pr = float(ds['longitude'])
+        ref_lat_pr = float(ds['latitude'])
+
+        ref_lon_pr = ref_lon_pr - 360 if ref_lon_pr > 180 else ref_lon_pr
+
     # wfde5/w5e5 invariant file
     # (gridpoint altitude only valid for temperature
     # in case of 'W5E5_MSWEP')
@@ -668,7 +851,7 @@ def process_w5e5_data(gdir, y0=None, y1=None, temporal_resol='daily',
             ref_pix_lat_pr = None
 
     # OK, ready to write
-    write_climate_file(gdir, time, prcp, temp, hgt, ref_lon, ref_lat,
+    write_climate_file(gdir, time, prcp, temp, tempmax, tempmin, hurs, rsds, hgt, ref_lon, ref_lat,
                        ref_pix_lon_pr=ref_pix_lon_pr, ref_pix_lat_pr=ref_pix_lat_pr,
                        filesuffix=output_filesuffix,
                        temporal_resol=temporal_resol,
