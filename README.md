@@ -18,6 +18,11 @@
 
 ![Leh_runoff](figs/Leh_runoff.png)
 
+- [glacial_irr_water.ipynb](docs/glacial_irr_water.ipynb): 
+    - Methodology to find out months of the year when glacial runoff can irrigate 1 km2 of land.
+
+![glacial_irrigation](figs/Glacial_irrigation.png)
+
 ## How to install!
 <!-- structure as in https://github.com/fmaussion/scispack and oggm/oggm -->
 the newest OGGM developer version has to be installed in order that MBsandbox works:
