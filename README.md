@@ -19,7 +19,10 @@
 ![Leh_runoff](figs/Leh_runoff.png)
 
 - [glacial_irr_water.ipynb](docs/glacial_irr_water.ipynb): 
-    - Methodology to find out months of the year when glacial runoff can irrigate 1 km2 of land.
+    - Methodology to find out area of land AIR runoff can irrigate. Assumptions are:
+    a. Leh glacier has a catchment area of 5 km2.
+    b. AIR median water supply is 11 m3
+    c. Total irrigation demand = AIR supply + Glacial supply - Potential Evapotranspiration (AIR + Glacier - PE)
 
 ![glacial_irrigation](figs/Glacial_irrigation.png)
 
